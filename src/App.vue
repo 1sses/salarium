@@ -7,7 +7,13 @@
     <h2 class="main-header">Вы заработали сегодня</h2>
   </el-row>
   <SalaryDisplay :value="thisDaySalary" :currency="controls.currency" />
-  <SalaryControls v-model="controls" @add-working-period="addWorkingPeriod" @remove-working-period="removeWorkingPeriod" />
+  <SalaryControls
+    v-model="controls"
+    @add-working-period="addWorkingPeriod"
+    @remove-working-period="removeWorkingPeriod"
+    @add-break="addBreak"
+    @remove-break="removeBreak"
+  />
 </template>
 
 <script setup>
@@ -31,12 +37,27 @@ const addWorkingPeriod = () => {
   controls.workingPeriods.push({
     id,
     days: [],
-    time: []
+    time: [],
+    breaks: []
   })
 }
 
 const removeWorkingPeriod = (id) => {
   controls.workingPeriods = controls.workingPeriods.filter((group) => group.id !== id)
+}
+
+const addBreak = (id) => {
+  const group = controls.workingPeriods.find((group) => group.id === id)
+  console.log(group)
+  group.breaks.push({
+    id: Date.now(),
+    time: []
+  })
+}
+
+const removeBreak = (id) => {
+  const group = controls.workingPeriods.find((group) => group.id === id)
+  group.breaks = group.breaks.filter((group) => group.id !== id)
 }
 
 // simple mode
@@ -90,6 +111,7 @@ setInterval(() => {
         // todayDuration: acc.todayDuration + todayDuration
       }
     }, { thisMonth: 0, today: 0, thisMonthDuration: 0/* , todayDuration: 0 */ })
+    // console.log(working)
     thisMonthSalary.value = controls.salary * working.thisMonth / working.thisMonthDuration
     thisDaySalary.value = controls.salary * working.today / working.thisMonthDuration
   }
