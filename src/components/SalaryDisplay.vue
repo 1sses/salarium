@@ -1,8 +1,13 @@
 <template>
-  <el-row justify="center" align="bottom">
-    <Vue3Odometer class="main-display" :value="value" format="( ddd),dd" :duration="130" theme="minimal" />
-    <span class="currency">&nbsp;{{currency}}</span>
-  </el-row>
+  <div>
+    <el-row justify="center">
+      <h2 class="main-header">{{label}}</h2>
+    </el-row>
+    <el-row justify="center" align="bottom">
+      <Vue3Odometer class="main-display" :value="value" format="( ddd),dd" :duration="130" theme="minimal" />
+      <span class="currency">&nbsp;{{currency}}</span>
+    </el-row>
+  </div>
 </template>
 
 <script setup>
@@ -15,6 +20,9 @@ defineProps({
     type: Number,
     required: true
   },
+  label: {
+    type: String
+  },
   currency: {
     type: String,
     default: '$'
@@ -23,8 +31,15 @@ defineProps({
 </script>
 
 <style scoped>
+.main-header {
+  font-size: 50px;
+  font-weight: 500;
+  margin-bottom: 50px;
+  text-align: center;
+}
+
 .main-display {
-  font-family: "Segoe UI", sans-serif;
+  font-weight: 300;
   font-size: 200px;
 }
 

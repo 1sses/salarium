@@ -1,24 +1,22 @@
 <template>
-  <el-row justify="center">
-    <h2 class="main-header">Вы заработали в этом месяце</h2>
-  </el-row>
-  <SalaryDisplay :value="thisMonthSalary" :currency="controls.currency" />
-  <el-row justify="center">
-    <h2 class="main-header">Вы заработали сегодня</h2>
-  </el-row>
-  <SalaryDisplay :value="thisDaySalary" :currency="controls.currency" />
-  <SalaryControls
-    v-model="controls"
-    @add-working-period="addWorkingPeriod"
-    @remove-working-period="removeWorkingPeriod"
-    @add-break="addBreak"
-    @remove-break="removeBreak"
-  />
+  <SalaryDisplay :value="thisMonthSalary" label="Вы заработали в это месяце" :currency="controls.currency" />
+  <SalaryDisplay :value="thisDaySalary" label="Вы заработали сегодня" :currency="controls.currency" />
+  <el-button type="primary" circle size="large" @click="controlsDialog = true" :icon="Setting" style="position: absolute; top: 20px; right: 20px" />
+  <el-dialog v-model="controlsDialog" width="95%" title="Настройки">
+    <SalaryControls
+      v-model="controls"
+      @add-working-period="addWorkingPeriod"
+      @remove-working-period="removeWorkingPeriod"
+      @add-break="addBreak"
+      @remove-break="removeBreak"
+    />
+  </el-dialog>
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue'
 import * as dayjs from 'dayjs'
+import { Setting } from '@element-plus/icons-vue'
 import SalaryControls from '@/components/SalaryControls'
 import SalaryDisplay from '@/components/SalaryDisplay'
 
@@ -31,11 +29,14 @@ const controls = reactive(JSON.parse(localStorage.getItem('controls')) || {
 
 const thisMonthSalary = ref(0)
 const thisDaySalary = ref(0)
+const controlsDialog = ref(false)
 
 const addWorkingPeriod = () => {
   const id = Date.now()
   controls.workingPeriods.push({
     id,
+    name: '',
+    salary: 0,
     days: [],
     time: [],
     breaks: []
@@ -48,7 +49,6 @@ const removeWorkingPeriod = (id) => {
 
 const addBreak = (id) => {
   const group = controls.workingPeriods.find((group) => group.id === id)
-  console.log(group)
   group.breaks.push({
     id: Date.now(),
     time: []
@@ -56,8 +56,9 @@ const addBreak = (id) => {
 }
 
 const removeBreak = (id) => {
-  const group = controls.workingPeriods.find((group) => group.id === id)
-  group.breaks = group.breaks.filter((group) => group.id !== id)
+  controls.workingPeriods.forEach((group) => {
+    group.breaks = group.breaks.filter((breakGroup) => breakGroup.id !== id)
+  })
 }
 
 // simple mode
@@ -72,18 +73,20 @@ setInterval(() => {
   }
 }, 2000)
 
+// extended mode
 setInterval(() => {
   if (!controls.simpleMode) {
     const now = dayjs()
-    const working = controls.workingPeriods.reduce((acc, group) => {
-      // console.log(group)
+    let earnThisMonth = 0
+    let earnToday = 0
+    controls.workingPeriods.forEach((group) => {
       let thisMonthWorked = 0
       let todayWorked = 0
       let thisMonthDuration = 0
       // let todayDuration = 0
-      const days = group.days.map((day) => +day)
-      const startTime = dayjs(group.time[0]).second(0)
-      const endTime = dayjs(group.time[1]).second(0)
+      const days = group.days ? group.days?.map((day) => +day) : []
+      const startTime = dayjs(group.time?.at(0)).second(0)
+      const endTime = dayjs(group.time?.at(1)).second(0)
       const duration = endTime.diff(startTime, 'seconds')
       for (const day of days) {
         thisMonthDuration += duration
@@ -104,34 +107,42 @@ setInterval(() => {
           }
         }
       }
-      return {
-        thisMonth: acc.thisMonth + thisMonthWorked,
-        today: acc.today + todayWorked,
-        thisMonthDuration: acc.thisMonthDuration + thisMonthDuration
-        // todayDuration: acc.todayDuration + todayDuration
+      for (const breakGroup of group.breaks) {
+        const breakStartTime = dayjs(breakGroup.time?.at(0)).second(0)
+        const breakEndTime = dayjs(breakGroup.time?.at(1)).second(0)
+        const breakDuration = breakEndTime.diff(breakStartTime, 'seconds')
+        thisMonthDuration -= breakDuration * days.length
+        if (now.isBefore(breakStartTime)) {
+          thisMonthWorked -= 0
+          todayWorked -= 0
+        } else if (now.isAfter(breakEndTime)) {
+          thisMonthWorked -= breakDuration
+          todayWorked -= breakDuration
+        } else {
+          thisMonthWorked -= now.diff(breakStartTime, 'seconds')
+          todayWorked -= now.diff(breakStartTime, 'seconds')
+        }
       }
-    }, { thisMonth: 0, today: 0, thisMonthDuration: 0/* , todayDuration: 0 */ })
-    // console.log(working)
-    thisMonthSalary.value = controls.salary * working.thisMonth / working.thisMonthDuration
-    thisDaySalary.value = controls.salary * working.today / working.thisMonthDuration
+      earnThisMonth += thisMonthDuration ? thisMonthWorked / thisMonthDuration * group.salary : 0
+      earnToday += thisMonthDuration ? todayWorked / thisMonthDuration * group.salary : 0
+    })
+    thisMonthSalary.value = earnThisMonth
+    thisDaySalary.value = earnToday
   }
 }, 2000)
 
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400&family=Rubik:wght@300;400&display=swap');
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', sans-serif;
 }
 
-.main-header {
-  font-size: 50px;
-  font-weight: 500;
-  margin-bottom: 50px;
+body, input, button, select, textarea {
+  font-family: Mulish, sans-serif;
 }
 </style>
