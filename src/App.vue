@@ -1,7 +1,9 @@
 <template>
-  <SalaryDisplay :value="thisMonthSalary" label="Вы заработали в это месяце" :currency="controls.currency" />
-  <SalaryDisplay :value="thisDaySalary" label="Вы заработали сегодня" :currency="controls.currency" />
-  <el-button type="primary" circle size="large" @click="controlsDialog = true" :icon="Setting" style="position: absolute; top: 20px; right: 20px" />
+  <el-row justify="space-evenly" align="middle" style="flex-direction: column; height: 100vh">
+    <SalaryDisplay :value="thisMonthSalary" label="Вы заработали в этом месяце" :currency="controls.currency" />
+    <SalaryDisplay :value="thisDaySalary" label="Вы заработали сегодня" :currency="controls.currency" />
+  </el-row>
+  <el-button color="black" circle size="large" @click="controlsDialog = true" :icon="Setting" style="position: absolute; top: 20px; right: 20px" />
   <el-dialog v-model="controlsDialog" width="95%" title="Настройки">
     <SalaryControls
       v-model="controls"
@@ -18,7 +20,7 @@ import { reactive, ref } from 'vue'
 import * as dayjs from 'dayjs'
 import { Setting } from '@element-plus/icons-vue'
 import SalaryControls from '@/components/SalaryControls'
-import SalaryDisplay from '@/components/SalaryDisplay'
+import SalaryDisplay from '@/components/CounterDisplay'
 
 const controls = reactive(JSON.parse(localStorage.getItem('controls')) || {
   salary: 0,
@@ -130,7 +132,6 @@ setInterval(() => {
     thisDaySalary.value = earnToday
   }
 }, 2000)
-
 </script>
 
 <style>
@@ -144,5 +145,9 @@ setInterval(() => {
 
 body, input, button, select, textarea {
   font-family: Mulish, sans-serif;
+}
+
+body {
+  background: #fffdff;
 }
 </style>
