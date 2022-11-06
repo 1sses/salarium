@@ -21,6 +21,7 @@ import * as dayjs from 'dayjs'
 import { Setting } from '@element-plus/icons-vue'
 import SalaryControls from '@/components/SalaryControls'
 import SalaryDisplay from '@/components/CounterDisplay'
+import { seconds } from '@/utils/time'
 
 const controls = reactive(JSON.parse(localStorage.getItem('controls')) || {
   salary: 0,
@@ -85,44 +86,49 @@ setInterval(() => {
       let thisMonthWorked = 0
       let todayWorked = 0
       let thisMonthDuration = 0
-      // let todayDuration = 0
       const days = group.days ? group.days?.map((day) => +day) : []
       const startTime = dayjs(group.time?.at(0)).second(0)
       const endTime = dayjs(group.time?.at(1)).second(0)
-      const duration = endTime.diff(startTime, 'seconds')
+      const dayDuration = seconds(endTime) - seconds(startTime)
       for (const day of days) {
-        thisMonthDuration += duration
+        thisMonthDuration += dayDuration
         if (day < now.date()) {
-          thisMonthWorked += duration
+          thisMonthWorked += dayDuration
         }
         if (day === now.date()) {
-          // todayDuration += duration
-          if (now.isBefore(startTime)) {
+          if (seconds(now) < seconds(startTime)) {
             thisMonthWorked += 0
             todayWorked += 0
-          } else if (now.isAfter(endTime)) {
-            thisMonthWorked += duration
-            todayWorked += duration
+          } else if (seconds(now) > seconds(endTime)) {
+            thisMonthWorked += dayDuration
+            todayWorked += dayDuration
           } else {
-            thisMonthWorked += now.diff(startTime, 'seconds')
-            todayWorked += now.diff(startTime, 'seconds')
+            thisMonthWorked += seconds(now) - seconds(startTime)
+            todayWorked += seconds(now) - seconds(startTime)
           }
         }
       }
       for (const breakGroup of group.breaks) {
         const breakStartTime = dayjs(breakGroup.time?.at(0)).second(0)
         const breakEndTime = dayjs(breakGroup.time?.at(1)).second(0)
-        const breakDuration = breakEndTime.diff(breakStartTime, 'seconds')
+        const breakDuration = seconds(breakEndTime) - seconds(breakStartTime)
         thisMonthDuration -= breakDuration * days.length
-        if (now.isBefore(breakStartTime)) {
-          thisMonthWorked -= 0
-          todayWorked -= 0
-        } else if (now.isAfter(breakEndTime)) {
-          thisMonthWorked -= breakDuration
-          todayWorked -= breakDuration
-        } else {
-          thisMonthWorked -= now.diff(breakStartTime, 'seconds')
-          todayWorked -= now.diff(breakStartTime, 'seconds')
+        for (const day of days) {
+          if (day < now.date()) {
+            thisMonthWorked -= breakDuration
+          }
+          if (day === now.date()) {
+            if (seconds(now) < seconds(breakStartTime)) {
+              thisMonthWorked -= 0
+              todayWorked -= 0
+            } else if (seconds(now) > seconds(breakEndTime)) {
+              thisMonthWorked -= breakDuration
+              todayWorked -= breakDuration
+            } else {
+              thisMonthWorked -= seconds(now) - seconds(breakStartTime)
+              todayWorked -= seconds(now) - seconds(breakStartTime)
+            }
+          }
         }
       }
       earnThisMonth += thisMonthDuration ? thisMonthWorked / thisMonthDuration * group.salary : 0

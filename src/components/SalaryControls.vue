@@ -33,7 +33,7 @@
         &nbsp;Рабочие периоды:
       </h3>
     </el-col>
-    <el-row v-if="!controls.simpleMode" :justify="controls.workingPeriods.length > 1 ? 'space-evenly' : 'flex-start'" style="row-gap: 20px; column-gap: 20px">
+    <el-row v-if="!controls.simpleMode" :justify="controls.workingPeriods.length > 1 ? 'space-evenly' : 'start'" style="row-gap: 20px; column-gap: 20px">
       <div v-for="group in controls.workingPeriods" :key="group.id" style="display: flex">
         <el-card header="Название периода" body-style="position: relative; display: flex; flex-direction: column; justify-content: space-between; row-gap: 10px" style="width: 350px" shadow="never">
           <template #header>
